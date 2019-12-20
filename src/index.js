@@ -10,6 +10,7 @@ import * as serviceWorker from './serviceWorker';
 // https://reactjs.org/tutorial/tutorial.html#function-components
 // https://reactjs.org/tutorial/tutorial.html#adding-time-travel
 // https://reactjs.org/tutorial/tutorial.html#showing-the-past-moves
+// https://codepen.io/gaearon/pen/gWWZgR?editors=0010
 
 class Board extends React.Component {
 
@@ -60,6 +61,7 @@ class Board extends React.Component {
         history: [{
           squares: Array(9).fill(null),
         }],
+        stepNumber: 0,
         xIsNext: true,
       };
     }
@@ -67,7 +69,7 @@ class Board extends React.Component {
     squareChar = (xIsNext) => xIsNext ? 'X' : 'O';
 
     handleClick(i) {
-      const history = this.state.history;
+      const history = this.state.history.slice(0, this.state.stepNumber + 1);
       const current = history[history.length-1];
       const squares = current.squares.slice();
       if (squares[i] || this.calculateWinner(squares)) {
@@ -78,7 +80,15 @@ class Board extends React.Component {
         history: history.concat([{
           squares: squares,
         }]),
+        stepNumber: history.length,
         xIsNext: !this.state.xIsNext,
+      });
+    }
+
+    jumpTo(step) {
+      this.setState({
+        stepNumber: step,
+        xIsNext: (step % 2) === 0,
       });
     }
 
@@ -106,13 +116,29 @@ class Board extends React.Component {
 
     render() {
       const history = this.state.history;
-      const current = history[history.length-1];
+      const current = history[this.state.stepNumber];
       const winner = this.calculateWinner(current.squares);
-      let status = 'Next player: ' + this.squareChar(this.state.xIsNext);
+
+      const moves = history.map((step, index) => {
+        const desc = index ?
+          'Go to move #' + index :
+          'Go to game start';
+        return (
+          <li key={index}>
+            <button onClick={() => this.jumpTo(index)}>{desc}</button>
+          </li>
+        );
+      });
+
+      let status;
       if (winner) {
         status = 'Winner: ' + winner;
+      } else {
+        status = 'Next player: ' + this.squareChar(this.state.xIsNext);
+        if (this.state.stepNumber >= 9) {
+          status = 'Game is a draw';
+        }
       }
-
 
       return (
         <div className="game">
@@ -123,7 +149,7 @@ class Board extends React.Component {
           </div>
           <div className="game-info">
             <div>{status}</div>
-            <ol>{/* TODO */}</ol>
+            <ol>{moves}</ol>
           </div>
         </div>
       );
